@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Sorpresa para mi sobrinita ❤️</title>
+  <meta name="description" content="Toca para empezar: lluvia de frases cariñosas, conejitos kawaii y corazones gigantes entrecruzados hechos de corazoncitos.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Sorpresa para mi sobrinita ❤️">
+  <meta property="og:description" content="Toca para empezar: lluvia de frases cariñosas, conejitos kawaii y corazones gigantes entrecruzados.">
+  <meta property="og:image" content="assets/og-te-amo.png">
+  <meta property="og:url" content="/">
+  <style>
+    :root{ --bg1:#0f0f1b; --bg2:#1c1b2a; }
+    *{ box-sizing:border-box; }
+    html,body{height:100%;margin:0}
+    body{ overflow:hidden; background:radial-gradient(1200px 800px at 70% 10%, var(--bg2), var(--bg1) 60%); color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Noto Sans',sans-serif; touch-action:manipulation; }
+    #stage{ position:relative; width:100%; height:100%; cursor:pointer; }
+    .center-start{ position:absolute; inset:0; display:grid; place-content:center; text-align:center; gap:12px; user-select:none; }
+    .title{ font-weight:900; font-size:clamp(28px,6vw,56px); text-shadow:0 8px 24px rgba(0,0,0,.45); }
+    .tap{ display:inline-block; padding:10px 16px; border-radius:999px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); backdrop-filter:blur(8px); font-weight:700; box-shadow:0 6px 24px rgba(0,0,0,.25); }
+    .love{ position:absolute; will-change:transform,opacity; pointer-events:none; font-weight:800; white-space:nowrap; filter:drop-shadow(0 6px 16px rgba(0,0,0,.25)); text-shadow:0 2px 8px rgba(0,0,0,.45); user-select:none; }
+    .heartParticle{ position:absolute; pointer-events:none; font-size:22px; will-change:left,top,opacity; }
+    .bunny{ position:fixed; bottom:22px; width:86px; height:auto; user-select:none; pointer-events:none; filter: drop-shadow(0 6px 16px rgba(0,0,0,.35)); animation: bunnyBounce 1.2s ease-in-out infinite; }
+    #bunny-left{ left:14px; }
+    #bunny-right{ right:14px; transform: scaleX(-1); }
+    @keyframes bunnyBounce{ 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-9px) } }
+    @keyframes fallFloat{ 0%{ transform:translate(var(--x,0),-60px) scale(var(--s,1)); opacity:0; } 20%{ opacity:1; } 70%{ transform:translate(var(--x,0),var(--fy,60vh)) scale(calc(var(--s,1)*1.05)); opacity:1;} 100%{ transform:translate(var(--x,0),calc(var(--fy,60vh) - 120px)) scale(calc(var(--s,1)*1.08)); opacity:0;} }
+    @keyframes burst{ 0%{ transform:translate(var(--bx,0),var(--by,0)) scale(var(--s,1)); opacity:0; } 10%{ opacity:1; } 100%{ transform:translate(calc(var(--bx,0) + var(--dx,0px)), calc(var(--by,0) + var(--dy,0px))) scale(calc(var(--s,1)*1.15)); opacity:0; } }
+    .footer-note{ position:fixed; bottom:8px; left:50%; transform:translateX(-50%); font-weight:700; color:#ffd1e8; text-shadow:0 2px 10px rgba(0,0,0,.6); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:999px; padding:8px 12px; backdrop-filter: blur(6px); user-select:none; pointer-events:none; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div id="stage" role="application">
+    <div id="start" class="center-start">
+      <div class="title">te prepare una sorpresa ✨</div>
+      <div class="tap">Toca la pantalla para empezar 💫</div>
+    </div>
+    <img id="bunny-left" class="bunny" src="assets/bunny-left.gif" alt="Conejito izquierdo">
+    <img id="bunny-right" class="bunny" src="assets/bunny-right.gif" alt="Conejito derecho">
+    <div class="footer-note">para vos 💖</div>
+  </div>
+
+  <script>
+  (()=>{
+    const stage = document.getElementById('stage');
+    const startOverlay = document.getElementById('start');
+    const W = () => stage.clientWidth;
+    const H = () => stage.clientHeight;
+
+    // Frases para la sobrinita (aleatorias)
+    const phrases = ["te quiero mucho sobrinita 💕", "tontita 😜"];
+
+    const colors = ["#ff4d6d","#ff99cc","#ff3366","#ff66b2","#ffd1e8"];
+    const FONTS_MIN=16, FONTS_MAX=44;
+    let started=false;
+
+    function rand(min,max){ return Math.random()*(max-min)+min; }
+    function randInt(min,max){ return Math.floor(rand(min,max+1)); }
+    function randomColor(){ return colors[randInt(0,colors.length-1)]; }
+    function randomPhrase(){ return phrases[randInt(0,phrases.length-1)]; }
+
+    // ---- Lluvia de frases ----
+    function makeNode(){
+      const el = document.createElement('span');
+      el.className = 'love';
+      el.textContent = randomPhrase();
+      el.style.color = randomColor();
+      el.style.fontSize = rand(FONTS_MIN, FONTS_MAX)+'px';
+      return el;
+    }
+    function spawnRain(){
+      const node = makeNode();
+      stage.appendChild(node);
+      node.style.setProperty('--x', rand(0, W())+'px');
+      node.style.setProperty('--fy', rand(H()*0.4, H()*0.92)+'px');
+      node.style.setProperty('--s', rand(0.9, 1.25));
+      const life = rand(3200, 6200);
+      node.style.animation = `fallFloat ${life}ms ease-in-out forwards`;
+      setTimeout(()=>node.remove(), life+120);
+    }
+    function startRain(){
+      for (let i=0;i<60;i++) setTimeout(spawnRain, i*25);
+      setInterval(()=>{
+        const n = randInt(2,5);
+        for (let i=0;i<n;i++) spawnRain();
+      }, 160);
+    }
+
+    // ---- Explosión por click ----
+    function spawnBurst(x,y, mult=70){
+      for(let i=0;i<mult;i++){
+        const node = makeNode();
+        stage.appendChild(node);
+        const ang = Math.random()*Math.PI*2;
+        const sp = rand(80, 240);
+        const dx = Math.cos(ang)*sp, dy = Math.sin(ang)*sp;
+        node.style.setProperty('--bx', x+'px');
+        node.style.setProperty('--by', y+'px');
+        node.style.setProperty('--dx', dx+'px');
+        node.style.setProperty('--dy', dy+'px');
+        node.style.setProperty('--s', rand(0.85,1.35));
+        const life = rand(900, 1900);
+        node.style.animation = `burst ${life}ms cubic-bezier(.2,.8,.2,1) forwards`;
+        setTimeout(()=>node.remove(), life+80);
+      }
+    }
+
+    // ---- Formación de dos corazones entrecruzados con corazoncitos ----
+    function heartParam(t){
+      const x = 16*Math.sin(t)**3;
+      const y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+      return [x,y];
+    }
+    function rotate(x,y,ang){
+      const c=Math.cos(ang), s=Math.sin(ang);
+      return [x*c - y*s, x*s + y*c];
+    }
+    function makeHeartPoints(cx, cy, scale, count, rot=0){
+      const pts = [];
+      for(let i=0;i<count;i++){
+        const t = (i/count) * Math.PI*2;
+        let [x,y] = heartParam(t);
+        [x,y] = rotate(x,y, rot);
+        x = cx + x*scale;
+        y = cy - y*scale;
+        pts.push([x,y]);
+      }
+      return pts;
+    }
+    function spawnParticleTo(x0,y0, x1,y1, delay=0){
+      const el = document.createElement('div');
+      el.className = 'heartParticle';
+      el.textContent = '❤';
+      el.style.color = randomColor();
+      el.style.left = x0+'px';
+      el.style.top = y0+'px';
+      el.style.opacity = 0;
+      stage.appendChild(el);
+      const dur = rand(900,1400);
+      setTimeout(()=>{
+        el.style.transition = `left ${dur}ms ease-out, top ${dur}ms ease-out, opacity ${dur}ms ease-in`;
+        el.style.left = x1+'px';
+        el.style.top = y1+'px';
+        el.style.opacity = 1;
+        setTimeout(()=>{
+          el.style.transition = 'opacity 700ms ease';
+          el.style.opacity = 0;
+          setTimeout(()=>el.remove(), 720);
+        }, dur+400);
+      }, delay);
+    }
+    function formationInterlacedHearts(){
+      const midX = W()/2, topY = H()*0.36;
+      const scale = Math.min(W(),H())/40;
+      const count = 120;
+      const A = makeHeartPoints(midX - scale*6, topY, scale, count, -0.05);
+      const B = makeHeartPoints(midX + scale*6, topY, scale, count, 0.05);
+      const leftSrc = {x: 60, y: H()-110};
+      const rightSrc = {x: W()-60, y: H()-110};
+      A.forEach((p,i)=>{
+        const src = (i%2===0)? leftSrc : rightSrc;
+        spawnParticleTo(src.x, src.y, p[0], p[1], i*9);
+      });
+      B.forEach((p,i)=>{
+        const src = (i%2===0)? rightSrc : leftSrc;
+        spawnParticleTo(src.x, src.y, p[0], p[1], i*9);
+      });
+    }
+    function startFormationLoop(){
+      formationInterlacedHearts();
+      setInterval(formationInterlacedHearts, 5200);
+    }
+
+    function startAll(){
+      startOverlay?.remove();
+      startRain();
+      startFormationLoop();
+    }
+    stage.addEventListener('click', e=>{
+      if(!started){ started=true; startAll(); }
+      else spawnBurst(e.clientX, e.clientY, 80);
+    }, {passive:true});
+    stage.addEventListener('touchstart', e=>{
+      const t=e.touches[0];
+      if(!started){ started=true; startAll(); }
+      else spawnBurst(t.clientX, t.clientY, 80);
+    }, {passive:true});
+  })();
+  </script>
+</body>
+</html>
