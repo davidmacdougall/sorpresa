@@ -3,32 +3,40 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Gatitos voladores 🐱</title>
-<meta name="description" content="Conejitos lanzan emojis de gatitos hacia arriba y caen con gravedad.">
+<title>Gatitos voladores 🐱 + mensajitos</title>
+<meta name="description" content="Conejitos lanzan emojis de gatitos hacia arriba (suben alto y caen) y llueven mensajitos cariñosos.">
 <style>
   :root{ --bg1:#0f0f1b; --bg2:#1c1b2a; }
-  *{ box-sizing:border-box }
-  html,body{ height:100%; margin:0 }
+  *{ box-sizing:border-box } html,body{ height:100%; margin:0 }
   body{
     background:radial-gradient(1200px 800px at 70% 10%, var(--bg2), var(--bg1) 60%);
     color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Noto Sans',sans-serif;
     overflow:hidden; touch-action:manipulation;
   }
   #stage{ position:relative; width:100%; height:100%; }
+
+  /* Conejitos */
   .bunny{
     position:fixed; bottom:18px; font-size:68px; user-select:none; pointer-events:none;
     filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
     animation: hop 1.3s ease-in-out infinite;
   }
-  #bunny-left{ left:14px; }
-  #bunny-right{ right:14px; transform:scaleX(-1); }
-  .bunny::before{ content:"🐇"; display:block; }
+  #bunny-left{ left:14px } #bunny-right{ right:14px; transform:scaleX(-1) }
+  .bunny::before{ content:"🐇"; display:block }
   @keyframes hop { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-10px) } }
 
+  /* Gatitos-partícula (proyectiles) */
   .cat{
     position:absolute; left:0; top:0; will-change:transform,opacity;
     font-size:38px; pointer-events:none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4));
     transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  /* Lluvia de frases */
+  .love{
+    position:absolute; pointer-events:none; font-weight:800; white-space:nowrap;
+    text-shadow:0 2px 8px rgba(0,0,0,.45); filter:drop-shadow(0 6px 16px rgba(0,0,0,.25));
+    opacity:0;
   }
 
   .hint{
@@ -41,7 +49,7 @@
 </style>
 </head>
 <body>
-  <div id="stage" role="application" aria-label="Gatitos voladores">
+  <div id="stage" role="application" aria-label="Gatitos y mensajitos">
     <div id="bunny-left" class="bunny" aria-hidden="true"></div>
     <div id="bunny-right" class="bunny" aria-hidden="true"></div>
     <div class="hint">tocá la pantalla para lanzar más 🐱</div>
@@ -53,12 +61,13 @@
   function W(){ return stage.clientWidth }
   function H(){ return stage.clientHeight }
   function rand(a,b){ return Math.random()*(b-a)+a }
+  function rint(a,b){ return Math.floor(rand(a,b+1)) }
 
-  // Parámetros de física
-  var GRAV = 0.22;      // gravedad (px / frame^2)
-  var DRAG = 0.0025;    // leve fricción horizontal
-  var SPAWN_EVERY = 180; // ms entre disparos por conejo
-  var MAX_CATS = 240;   // límite de partículas en pantalla
+  // ===== Física de gatitos =====
+  var GRAV = 0.22;      // gravedad (px/frame^2)
+  var DRAG = 0.0025;    // fricción horizontal suave
+  var SPAWN_EVERY = 180; // ms entre disparos por conejo (misma cantidad)
+  var MAX_CATS = 240;   // límite de partículas
 
   var cats = [];
   var lastTime = performance.now();
@@ -76,59 +85,52 @@
   function shootFromBunny(side){
     var x = (side === 'left') ? 52 : (W() - 52);
     var y = H() - 78;
-    // Velocidad inicial hacia arriba + poca variación lateral
-    var baseVy = - (rand(6.8, 8.8));  // px/frame
-    var baseVx = (side === 'left') ? rand(1.0, 2.6) : -rand(1.0, 2.6);
-    // Crear una pequeña ráfaga de 2-3 gatitos
+    // SUBEN MÁS ALTO: aumentamos la velocidad vertical hacia arriba
+    var baseVy = -(rand(9.5, 12.5));     // antes ~7–9, ahora 9.5–12.5
+    var baseVx = (side === 'left') ? rand(0.8, 2.2) : -rand(0.8, 2.2);
+    // ráfaga de 2–3 gatitos por disparo
     var n = Math.random() < 0.5 ? 2 : 3;
     for (var i=0;i<n;i++){
       spawnCat(
         x + rand(-6, 6),
         y + rand(-6, 6),
-        baseVx + rand(-0.6, 0.6),
-        baseVy + rand(-0.8, 0.6),
+        baseVx + rand(-0.5, 0.5),
+        baseVy + rand(-0.6, 0.6),
         rand(28, 44),
         rand(-10, 10)
       );
     }
   }
 
-  // Ráfaga al tocar/click
+  // Ráfaga manual
   function burstAt(cx, cy){
-    var count = 16;
+    var count = 16; // mantenemos la misma sensación
     for (var i=0;i<count;i++){
       var ang = Math.random()*Math.PI*2;
-      var sp = rand(3.5, 6.5);
+      var sp = rand(3.8, 7.0);
       spawnCat(
         cx, cy,
         Math.cos(ang)*sp,
-        Math.sin(ang)*sp - 2.0,   // un poco hacia arriba
+        Math.sin(ang)*sp - 3.0,   // empujón hacia arriba en burst
         rand(26, 40),
         rand(-20, 20)
       );
     }
   }
 
-  // Animación principal
   function tick(now){
-    var dt = Math.min(32, now - lastTime); // ms
-    lastTime = now;
-    var n = cats.length;
-    for (var i=n-1; i>=0; i--){
+    var dt = Math.min(32, now - lastTime); lastTime = now;
+    for (var i=cats.length-1; i>=0; i--){
       var c = cats[i];
-      // Física por frame (normalizamos un poco por dt)
       var steps = Math.max(1, Math.round(dt/16));
       for (var s=0; s<steps; s++){
-        c.vy += GRAV;                 // gravedad
-        c.vx *= (1 - DRAG);           // drag suave
-        c.x += c.vx;
-        c.y += c.vy;
-        c.r += c.vx * 0.15;           // giro leve
+        c.vy += GRAV;
+        c.vx *= (1 - DRAG);
+        c.x += c.vx; c.y += c.vy;
+        c.r += c.vx * 0.15;
       }
       c.life += dt;
-
       c.el.style.transform = 'translate(' + c.x + 'px,' + c.y + 'px) rotate(' + c.r + 'deg)';
-      // desaparecer si sale de pantalla o vive mucho
       if (c.y > H()+80 || c.x < -80 || c.x > W()+80 || c.life > 12000){
         if (c.el && c.el.parentNode) c.el.parentNode.removeChild(c.el);
         cats.splice(i,1);
@@ -137,17 +139,45 @@
     requestAnimationFrame(tick);
   }
 
-  // Disparos automáticos desde los conejitos
+  // ===== Lluvia de frases (como antes) =====
+  var phrases = ["te quiero mucho sobrinita 💕", "tontita 😜"];
+  var rainColors = ["#ff4d6d","#ff99cc","#ff3366","#ff66b2","#ffd1e8"];
+  function rcol(){ return rainColors[rint(0,rainColors.length-1)] }
+  function rphrase(){ return phrases[rint(0,phrases.length-1)] }
+
+  function makeMsg(){
+    var el = document.createElement('span');
+    el.className = 'love';
+    el.textContent = rphrase();
+    el.style.color = rcol();
+    el.style.fontSize = rand(16, 44) + 'px';
+    return el;
+  }
+  function spawnRain(){
+    var n = makeMsg(); stage.appendChild(n);
+    n.style.left = rand(0, W()) + 'px';
+    n.style.top  = '-28px';
+    n.style.transition = 'top 5.6s linear, opacity .6s ease';
+    setTimeout(function(){ n.style.opacity = 1; n.style.top = (H()-120) + 'px'; }, 20);
+    setTimeout(function(){ if(n && n.parentNode) n.parentNode.removeChild(n); }, 5800);
+  }
+  function startRain(){
+    // un poco menos denso para que no tape los gatitos
+    for (var i=0;i<12;i++) (function(ii){ setTimeout(spawnRain, ii*60); })(i); // 12 iniciales
+    setInterval(function(){ spawnRain(); }, 400); // 1 cada 400 ms
+  }
+
+  // ===== Arranque y eventos =====
   setInterval(function(){ shootFromBunny('left');  }, SPAWN_EVERY);
   setInterval(function(){ shootFromBunny('right'); }, SPAWN_EVERY);
 
-  // Interacción
   stage.addEventListener('click', function(e){ burstAt(e.clientX, e.clientY); }, false);
   stage.addEventListener('touchstart', function(e){
     var t = e.touches[0]; burstAt(t.clientX, t.clientY);
   }, {passive:true});
 
-  // Arranque
+  // Iniciar animaciones
+  startRain();
   requestAnimationFrame(function(t){ lastTime = t; requestAnimationFrame(tick); });
 })();
 </script>
